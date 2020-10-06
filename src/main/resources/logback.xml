@@ -1,0 +1,35 @@
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator>
+                <expression>
+                    if( logger.startsWith("com.amazonaws.services.kinesis.metrics.impl.CWPublisherRunnable") ){
+                        return true;
+                    } else if( logger.startsWith("com.amazonaws.services.kinesis.metrics.impl.MetricsHelper") ) {
+                        return true;
+                    }
+                    return false;
+                </expression>
+            </evaluator>
+            <OnMismatch>NEUTRAL</OnMismatch>
+            <OnMatch>DENY</OnMatch>
+        </filter>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <logger name="com.amazonaws.services.kinesis.clientlibrary" level="WARN" />
+    <logger name="com.amazonaws.services.kinesis.clientlibrary.lib.worker.Worker" level="WARN" />
+    <logger name="com.amazonaws.services.kinesis.leases.impl.LeaseRenewer" level="WARN" />
+    <logger name="com.amazonaws.services.dynamodbv2.streamsadapter.leases.StreamsLeaseTaker" level="WARN" />
+
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+</configuration>
