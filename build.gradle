@@ -17,11 +17,15 @@ plugins {
 // Define the main class for the application
 mainClassName = 'com.scylladb.java.StreamsAdapterDemo'
 
+apply plugin: 'java'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
 dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     compile 'com.amazonaws:amazon-kinesis-client:1.8.8'
-    compile 'com.amazonaws:dynamodb-streams-kinesis-adapter:1.5.1'
-    compile 'com.amazonaws:aws-java-sdk-dynamodb:1.11.875'
+    compile 'com.amazonaws:dynamodb-streams-kinesis-adapter:[1.5.1,)'
+    compile 'com.amazonaws:aws-java-sdk-dynamodb:[1.11.89, 2.0.0)'
     compile 'org.codehaus.janino:janino:3.0.6'
     compile 'ch.qos.logback:logback-classic:1.2.3'
     compile 'org.slf4j:jcl-over-slf4j:1.7.25'

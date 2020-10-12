@@ -1,4 +1,4 @@
-package com.scylladb.java;
+package com.scylladb.alternator;
 
 import com.amazonaws.services.cloudwatch.AbstractAmazonCloudWatch;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest;
