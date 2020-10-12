@@ -16,21 +16,23 @@
 
 package com.scylladb.java;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.kinesis.clientlibrary.interfaces.v2.IRecordProcessor;
-import com.amazonaws.services.kinesis.clientlibrary.interfaces.v2.IRecordProcessorFactory;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessor;
+import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorFactory;
 
 public class StreamsRecordProcessorFactory implements IRecordProcessorFactory {
-    private final String tableName;
-    private final AmazonDynamoDB dynamoDBClient;
 
-    public StreamsRecordProcessorFactory(AmazonDynamoDB dynamoDBClient, String tableName) {
-        this.tableName = tableName;
-        this.dynamoDBClient = dynamoDBClient;
-    }
+	private final AmazonDynamoDBClientBuilder amazonDynamoDBClientBuilder;
+	private final String tableName;
 
-    @Override
-    public IRecordProcessor createProcessor() {
-        return new StreamsRecordProcessor(dynamoDBClient, tableName);
-    }
+	public StreamsRecordProcessorFactory(AmazonDynamoDBClientBuilder amazonDynamoDBClientBuilder, String tableName) {
+		this.amazonDynamoDBClientBuilder = amazonDynamoDBClientBuilder;
+		this.tableName = tableName;
+	}
+
+	@Override
+	public IRecordProcessor createProcessor() {
+		return new StreamsRecordProcessor(amazonDynamoDBClientBuilder.build(), tableName);
+	}
+
 }
