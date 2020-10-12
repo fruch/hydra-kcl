@@ -13,8 +13,7 @@
  * specific language governing permissions and limitations under the License.
 */
 
-
-package com.scylladb.java;
+package com.scylladb.alternator;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessor;
@@ -22,17 +21,17 @@ import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorF
 
 public class StreamsRecordProcessorFactory implements IRecordProcessorFactory {
 
-	private final AmazonDynamoDBClientBuilder amazonDynamoDBClientBuilder;
-	private final String tableName;
+    private final AmazonDynamoDBClientBuilder amazonDynamoDBClientBuilder;
+    private final String tableName;
 
-	public StreamsRecordProcessorFactory(AmazonDynamoDBClientBuilder amazonDynamoDBClientBuilder, String tableName) {
-		this.amazonDynamoDBClientBuilder = amazonDynamoDBClientBuilder;
-		this.tableName = tableName;
-	}
+    public StreamsRecordProcessorFactory(AmazonDynamoDBClientBuilder amazonDynamoDBClientBuilder, String tableName) {
+        this.amazonDynamoDBClientBuilder = amazonDynamoDBClientBuilder;
+        this.tableName = tableName;
+    }
 
-	@Override
-	public IRecordProcessor createProcessor() {
-		return new StreamsRecordProcessor(amazonDynamoDBClientBuilder.build(), tableName);
-	}
+    @Override
+    public IRecordProcessor createProcessor() {
+        return new StreamsRecordProcessor(amazonDynamoDBClientBuilder.build(), tableName);
+    }
 
 }
