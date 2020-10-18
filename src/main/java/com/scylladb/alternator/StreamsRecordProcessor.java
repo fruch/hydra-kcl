@@ -67,7 +67,7 @@ public class StreamsRecordProcessor implements IRecordProcessor {
                     putItem(dynamoDBClient, tableName, streamRecord.getDynamodb().getNewImage());
                     break;
                 case "REMOVE":
-                    deleteItem(dynamoDBClient, tableName, streamRecord.getDynamodb().getKeys().get("p").getS());
+                    // deleteItem(dynamoDBClient, tableName, streamRecord.getDynamodb().getKeys().get("p").getS());
                 }
             }
             ++checkpointCounter;

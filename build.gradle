@@ -15,7 +15,7 @@ plugins {
 }
 
 // Define the main class for the application
-mainClassName = 'com.scylladb.java.StreamsAdapterDemo'
+mainClassName = 'com.scylladb.alternator.StreamsAdapterDemo'
 
 apply plugin: 'java'
 sourceCompatibility = 1.8
