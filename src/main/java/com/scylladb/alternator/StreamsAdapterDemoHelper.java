@@ -14,6 +14,9 @@
 
 package com.scylladb.alternator;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.concat;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -83,7 +86,18 @@ public class StreamsAdapterDemoHelper {
     }
 
     public static ScanResult scanTable(AmazonDynamoDB dynamoDBClient, String tableName) {
-        return dynamoDBClient.scan(new ScanRequest().withTableName(tableName));
+        ScanResult r = dynamoDBClient.scan(new ScanRequest().withTableName(tableName));
+        while (r.getLastEvaluatedKey() != null && !r.getLastEvaluatedKey().isEmpty()) {
+            ScanResult next = dynamoDBClient
+                    .scan(new ScanRequest().withTableName(tableName).withExclusiveStartKey(r.getLastEvaluatedKey()));
+            if (next.getCount() == 0) {
+                break;
+            }
+            r = r.withCount(r.getCount() + next.getCount())
+                    .withItems(concat(r.getItems().stream(), next.getItems().stream()).collect(toList()))
+                    .withConsumedCapacity(next.getConsumedCapacity()).withLastEvaluatedKey(next.getLastEvaluatedKey());
+        }
+        return r;
     }
 
     public static void putItem(AmazonDynamoDB dynamoDBClient, String tableName, String id, String val) {
