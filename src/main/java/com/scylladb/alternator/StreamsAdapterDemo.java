@@ -131,13 +131,10 @@ public class StreamsAdapterDemo {
             ScanResult sr = scanTable(dynamoDBClient, srcTable);
             ScanResult dr = null;
 
-            /*if (sr.getCount() < keyNumber && !create_data) {
-                throw new IllegalArgumentException("Not enough data (" + sr.getCount() + ") in source table");
-            }
             if (sr.getCount() < keyNumber && create_data) {
-                LOGGER.info("Adding " + (sr.getCount() - keyNumber) + " records to source table...");
+                LOGGER.info("Adding {} records to source table...", sr.getCount() - keyNumber);
                 putItems(dynamoDBClient, tablePrefix, sr.getCount(), keyNumber);
-            }*/
+            }
 
             KinesisClientLibConfiguration workerConfig = new KinesisClientLibConfiguration("streams-adapter-demo",
                     streamArn, b.getCredentials(), "streams-demo-worker").withParentShardPollIntervalMillis(1000)
@@ -156,8 +153,15 @@ public class StreamsAdapterDemo {
 
             for (;;) {
                 Thread.sleep(10000);
+                if (sr.getCount() < keyNumber) {
+                    LOGGER.info("Checking for source data...({}/{}): ", sr.getCount(), keyNumber);
+                    sr = scanTable(dynamoDBClient, srcTable);
+                    if (sr.getCount() < keyNumber) {
+                        continue;
+                    }
+                }
                 dr = scanTable(dynamoDBClient, destTable);
-                LOGGER.info("keys synced: " + dr.getCount() + "/" + keyNumber);
+                LOGGER.info("keys synced: {}/{}", dr.getCount(), keyNumber);
                 if (!dr.getCount().equals(keyNumber)) {
                     continue;
                 }
