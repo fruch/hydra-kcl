@@ -13,7 +13,18 @@ docker run -d -p 8080:8080 -p 9042:9042 scylladb/scylla-nightly:666.development-
 ./gradlew run --args='-e http://localhost:8080 -t usertable -k 10000
 
 # after ~30sec when tables created run ycsb
+
+
+# running with local ycsb
 python2.7 ./bin/ycsb load dynamodb  -P workloads/workloada -P dynamodb.properties -p recordcount=10000 -p insertorder=uniform -p insertcount=10000 -p fieldcount=2 -p fieldlength=50 -s
+
+# running with docker ycsb [keep in mind you localhost won't work inside docker, and you need a real address of you network interface]
+echo "accessKey=" > aws_dummy
+echo "secretKey=" >> aws_dummy
+docker run -v `pwd`/aws_dummy:/YCSB/aws_dummy -w /YCSB scylladb/hydra-loaders:ycsb-jdk8-20200326 ./bin/ycsb load dynamodb  -P workloads/workloada \
+ -p dynamodb.endpoint=http://192.168.122.1:8080 -p dynamodb.primaryKey=p -p dynamodb.awsCredentialsFile=aws_dummy \
+ -p recordcount=10000 -p insertorder=uniform -p insertcount=10000 -p fieldcount=2 -p fieldlength=50 -s
+
 
 # when you want to clear it out and try again
 cqlsh> DROP KEYSPACE "alternator_streams-adapter-demo"; DROP KEYSPACE "alternator_usertable"; DROP KEYSPACE "alternator_usertable-dest";
