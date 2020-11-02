@@ -141,7 +141,7 @@ public class StreamsAdapterDemo {
                             .withCleanupLeasesUponShardCompletion(true).withFailoverTimeMillis(240000)
                             .withRetryGetRecordsInSeconds(10).withInitialPositionInStream(TRIM_HORIZON)
                             .withIdleTimeBetweenReadsInMillis(1).withIdleMillisBetweenCalls(1)
-                            .withListShardsBackoffTimeInMillis(5000).withTaskBackoffTimeMillis(5000);
+                            .withShardSyncIntervalMillis(20000);
 
             LOGGER.info("Creating worker for stream: " + streamArn);
             Worker worker = new Worker.Builder().recordProcessorFactory(recordProcessorFactory).config(workerConfig)
