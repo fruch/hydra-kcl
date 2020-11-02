@@ -140,7 +140,8 @@ public class StreamsAdapterDemo {
                     streamArn, b.getCredentials(), "streams-demo-worker").withParentShardPollIntervalMillis(1000)
                             .withCleanupLeasesUponShardCompletion(true).withFailoverTimeMillis(240000)
                             .withRetryGetRecordsInSeconds(10).withInitialPositionInStream(TRIM_HORIZON)
-                            .withIdleTimeBetweenReadsInMillis(1).withIdleMillisBetweenCalls(1);
+                            .withIdleTimeBetweenReadsInMillis(1).withIdleMillisBetweenCalls(1)
+                            .withListShardsBackoffTimeInMillis(5000).withTaskBackoffTimeMillis(5000);
 
             LOGGER.info("Creating worker for stream: " + streamArn);
             Worker worker = new Worker.Builder().recordProcessorFactory(recordProcessorFactory).config(workerConfig)
@@ -153,13 +154,10 @@ public class StreamsAdapterDemo {
 
             for (;;) {
                 Thread.sleep(10000);
-                if (sr.getCount() < keyNumber) {
-                    LOGGER.info("Checking for source data...({}/{}): ", sr.getCount(), keyNumber);
-                    sr = scanTable(dynamoDBClient, srcTable);
-                    if (sr.getCount() < keyNumber) {
-                        continue;
-                    }
-                }
+
+                sr = scanTable(dynamoDBClient, srcTable);
+                LOGGER.info("Checking for source data...({}/{}): ", sr.getCount(), keyNumber);
+
                 dr = scanTable(dynamoDBClient, destTable);
                 LOGGER.info("keys synced: {}/{}", dr.getCount(), keyNumber);
                 if (!dr.getCount().equals(keyNumber)) {

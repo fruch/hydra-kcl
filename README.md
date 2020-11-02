@@ -30,6 +30,15 @@ docker run -v `pwd`/aws_dummy:/YCSB/aws_dummy -w /YCSB scylladb/hydra-loaders:yc
 cqlsh> DROP KEYSPACE "alternator_streams-adapter-demo"; DROP KEYSPACE "alternator_usertable"; DROP KEYSPACE "alternator_usertable-dest";
 ```
 
+###
+```bash
+export KCL_DOCKER_IMAGE=scylladb/hydra-loaders:ycsb-jdk8-$(date +'%Y%m%d')
+docker build . -t ${KCL_DOCKER_IMAGE}
+docker push ${KCL_DOCKER_IMAGE}
+echo "${KCL_DOCKER_IMAGE}" > image
+```
+
 ### TODOs
 
 * [ ] - dockerize it for usage in SCT
+
