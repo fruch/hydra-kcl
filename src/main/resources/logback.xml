@@ -22,11 +22,13 @@
         </layout>
     </appender>
 
-    <logger name="com.amazonaws.services.kinesis.clientlibrary" level="INFO" />
-    <logger name="com.amazonaws.services.kinesis.clientlibrary.lib.worker.Worker" level="INFO" />
-    <logger name="com.amazonaws.services.kinesis.leases.impl.LeaseRenewer" level="INFO" />
+    <logger name="com.amazonaws.services.kinesis.clientlibrary" level="WARN" />
+    <logger name="com.amazonaws.services.kinesis.clientlibrary.lib.worker.Worker" level="WARN" />
+    <logger name="com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisDataFetcher" level="WARN" />
+    <logger name="com.amazonaws.services.kinesis.clientlibrary.lib.worker.BlockOnParentShardTask" level="WARN" />
+    <logger name="com.amazonaws.services.kinesis.leases.impl.LeaseRenewer" level="WARN" />
     <logger name="com.amazonaws.services.kinesis.leases.impl.LeaseTaker" level="WARN" />
-
+    <logger name="com.amazonaws.services.kinesis.leases.impl.LeaseCoordinator" level="WARN" />
     <logger name="com.amazonaws.services.dynamodbv2.streamsadapter.leases.StreamsLeaseTaker" level="WARN" />
     <logger name="com.amazonaws.auth.profile.internal.BasicProfileConfigLoader" level="ERROR" />
     <logger name="software.amazon.awssdk.profiles.internal.ProfileFileReader" level="ERROR" />
