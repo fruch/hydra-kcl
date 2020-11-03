@@ -32,7 +32,7 @@ cqlsh> DROP KEYSPACE "alternator_streams-adapter-demo"; DROP KEYSPACE "alternato
 
 ###
 ```bash
-export KCL_DOCKER_IMAGE=scylladb/hydra-loaders:ycsb-jdk8-$(date +'%Y%m%d')
+export KCL_DOCKER_IMAGE=scylladb/hydra-loaders:kcl-jdk8-$(date +'%Y%m%d')
 docker build . -t ${KCL_DOCKER_IMAGE}
 docker push ${KCL_DOCKER_IMAGE}
 echo "${KCL_DOCKER_IMAGE}" > image
