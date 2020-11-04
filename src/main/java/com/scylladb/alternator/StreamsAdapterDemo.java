@@ -71,8 +71,12 @@ public class StreamsAdapterDemo {
         parser.addArgument("-r", "--region").setDefault("us-east-1").help("AWS region");
         parser.addArgument("-t", "--table-prefix").setDefault("KCL-Demo").help("Demo table name prefix");
 
-        parser.addArgument("-k", "--key-number").type(Integer.class).setDefault(1000)
+        parser.addArgument("-k", "--key-number").type(Integer.class).setDefault(0)
                 .help("number of key in the src table");
+
+        parser.addArgument("--timeout").type(Integer.class).setDefault(0)
+                .help("number of key in the src table");
+
         parser.addArgument("--create").action(storeTrue()).help("Create source data set if not available");
         parser.addArgument("--threads").type(Integer.class).setDefault(Runtime.getRuntime().availableProcessors() * 2)
                 .help("Max worker threads");
@@ -86,6 +90,7 @@ public class StreamsAdapterDemo {
 
         String tablePrefix = ns.getString("table_prefix");
         int keyNumber = ns.getInt("key_number");
+        int timeoutInSeconds =  ns.getInt("timeout");
         int threads = ns.getInt("threads");
         boolean create_data = ns.getBoolean("create");
         AmazonDynamoDBClientBuilder b = AmazonDynamoDBClientBuilder.standard();
@@ -128,13 +133,6 @@ public class StreamsAdapterDemo {
 
         try {
             String streamArn = setUpTables(dynamoDBClient, tablePrefix);
-            ScanResult sr = scanTable(dynamoDBClient, srcTable);
-            ScanResult dr = null;
-
-            if (sr.getCount() < keyNumber && create_data) {
-                LOGGER.info("Adding {} records to source table...", sr.getCount() - keyNumber);
-                putItems(dynamoDBClient, tablePrefix, sr.getCount(), keyNumber);
-            }
 
             KinesisClientLibConfiguration workerConfig = new KinesisClientLibConfiguration("streams-adapter-demo",
                     streamArn, b.getCredentials(), "streams-demo-worker").withParentShardPollIntervalMillis(1000)
@@ -152,30 +150,48 @@ public class StreamsAdapterDemo {
             Thread t = new Thread(worker);
             t.start();
 
-            for (;;) {
-                Thread.sleep(10000);
+            if (keyNumber != 0 || create_data) {
+                ScanResult sr = scanTable(dynamoDBClient, srcTable);
+                ScanResult dr = null;
 
-                sr = scanTable(dynamoDBClient, srcTable);
-                LOGGER.info("Checking for source data...({}/{}): ", sr.getCount(), keyNumber);
-
-                dr = scanTable(dynamoDBClient, destTable);
-                LOGGER.info("keys synced: {}/{}", dr.getCount(), keyNumber);
-                if (!dr.getCount().equals(keyNumber)) {
-                    continue;
+                if (sr.getCount() < keyNumber && create_data) {
+                    LOGGER.info("Adding {} records to source table...", sr.getCount() - keyNumber);
+                    putItems(dynamoDBClient, tablePrefix, sr.getCount(), keyNumber);
                 }
-                if (dr.getCount() >= keyNumber) {
-                    break;
+
+                for (;;) {
+                    Thread.sleep(10000);
+
+                    sr = scanTable(dynamoDBClient, srcTable);
+                    LOGGER.info("Checking for source data...({}/{}): ", sr.getCount(), keyNumber);
+
+                    dr = scanTable(dynamoDBClient, destTable);
+                    LOGGER.info("keys synced: {}/{}", dr.getCount(), keyNumber);
+                    if (!dr.getCount().equals(keyNumber)) {
+                        continue;
+                    }
+                    if (dr.getCount() >= keyNumber) {
+                        break;
+                    }
+                }
+
+                if (create_data) {
+                    if (dr != null && sr.getItems().equals(dr.getItems())) {
+                        LOGGER.info("Scan result is equal.");
+                    } else {
+                        LOGGER.error("Tables are different!");
+                    }
                 }
             }
 
+            if (timeoutInSeconds != 0) {
+                LOGGER.info("Sleeping for " + timeoutInSeconds + "sec");
+                Thread.sleep(timeoutInSeconds * 1000);
+
+            }
+            LOGGER.info("Shutting down Worker");
             worker.shutdown();
             t.join();
-
-            if (dr != null && sr.getItems().equals(dr.getItems())) {
-                LOGGER.info("Scan result is equal.");
-            } else {
-                LOGGER.error("Tables are different!");
-            }
 
             LOGGER.info("Done.");
         } finally {

@@ -70,6 +70,7 @@ public class StreamsRecordProcessor implements IRecordProcessor {
                     deleteItem(dynamoDBClient, tableName, streamRecord.getDynamodb().getKeys().get("p").getS());
                 }
             }
+            /* TODO: add it later when we actually want to test it
             ++checkpointCounter;
             if (checkpointCounter % 10 == 0) {
                 try {
@@ -77,7 +78,7 @@ public class StreamsRecordProcessor implements IRecordProcessor {
                 } catch (Exception e) {
                     LOGGER.warn("checkpoint", e);
                 }
-            }
+            }*/
         }
     }
 
