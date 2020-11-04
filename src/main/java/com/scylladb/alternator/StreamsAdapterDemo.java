@@ -202,8 +202,8 @@ public class StreamsAdapterDemo {
     private static String setUpTables(AmazonDynamoDB dynamoDBClient, String tablePrefix) throws TimeoutException {
         String srcTable = tablePrefix;
         String destTable = tablePrefix + "-dest";
-        String streamArn = createTable(dynamoDBClient, srcTable);
-        createTable(dynamoDBClient, destTable);
+        String streamArn = createTable(dynamoDBClient, srcTable, true);
+        createTable(dynamoDBClient, destTable, false);
 
         awaitTableCreation(dynamoDBClient, srcTable);
         awaitTableCreation(dynamoDBClient, destTable);

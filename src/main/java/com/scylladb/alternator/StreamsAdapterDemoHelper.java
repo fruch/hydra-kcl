@@ -53,7 +53,7 @@ public class StreamsAdapterDemoHelper {
     /**
      * @return StreamArn
      */
-    public static String createTable(AmazonDynamoDB client, String tableName) {
+    public static String createTable(AmazonDynamoDB client, String tableName, boolean enableStream) {
         java.util.List<AttributeDefinition> attributeDefinitions = new ArrayList<AttributeDefinition>();
         attributeDefinitions.add(new AttributeDefinition().withAttributeName("p").withAttributeType("S"));
 
@@ -65,8 +65,13 @@ public class StreamsAdapterDemoHelper {
                 .withWriteCapacityUnits(2L);
 
         StreamSpecification streamSpecification = new StreamSpecification();
-        streamSpecification.setStreamEnabled(true);
-        streamSpecification.setStreamViewType(StreamViewType.NEW_IMAGE);
+        if (enableStream) {
+            streamSpecification.setStreamEnabled(true);
+            streamSpecification.setStreamViewType(StreamViewType.NEW_IMAGE);
+        }
+        else {
+            streamSpecification.setStreamEnabled(false);
+        }
         CreateTableRequest createTableRequest = new CreateTableRequest().withTableName(tableName)
                 .withAttributeDefinitions(attributeDefinitions).withKeySchema(keySchema)
                 .withProvisionedThroughput(provisionedThroughput).withStreamSpecification(streamSpecification);
