@@ -21,6 +21,7 @@ import static com.scylladb.alternator.StreamsAdapterDemoHelper.putItems;
 import static com.scylladb.alternator.StreamsAdapterDemoHelper.scanTable;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
+import java.net.URI;
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,7 +64,7 @@ public class StreamsAdapterDemo {
         parser.addArgument("-c", "--cloudwatch").setDefault(false).help("Enable Cloudwatch");
         parser.addArgument("-e", "--endpoint").setDefault(new URL("http://localhost:8000"))
                 .help("DynamoDB/Alternator endpoint");
-        parser.addArgument("-se", "--streams-endpoint").setDefault(new URL("http://localhost:8000"))
+        parser.addArgument("-se", "--streams-endpoint")
                 .help("DynamoDB/Alternator streams endpoint");
 
         parser.addArgument("-u", "--user").setDefault("none").help("Credentials username");
@@ -93,19 +94,19 @@ public class StreamsAdapterDemo {
         int timeoutInSeconds =  ns.getInt("timeout");
         int threads = ns.getInt("threads");
         boolean create_data = ns.getBoolean("create");
-        AmazonDynamoDBClientBuilder b = AmazonDynamoDBClientBuilder.standard();
-        AmazonDynamoDBStreamsClientBuilder sb = AmazonDynamoDBStreamsClientBuilder.standard();
+        AmazonDynamoDBClientBuilder b = AmazonDynamoDBClientBuilder.standard().withRegion(ns.getString("region"));
+        AmazonDynamoDBStreamsClientBuilder sb = AmazonDynamoDBStreamsClientBuilder.standard().withRegion(ns.getString("region"));
         AmazonCloudWatch cloudWatchClient = null;
 
         if (!ns.getBoolean("aws")) {
             if (ns.getString("endpoint") != null) {
-                b.withEndpointConfiguration(
-                        new EndpointConfiguration(ns.getString("endpoint"), ns.getString("region")));
-                sb.withEndpointConfiguration(b.getEndpoint());
+                AlternatorRequestHandler handler = new AlternatorRequestHandler(URI.create(ns.getString("endpoint")));
+                b.withRequestHandlers(handler);
+                sb.withRequestHandlers(handler);
             }
             if (ns.getString("streams_endpoint") != null) {
-                sb.withEndpointConfiguration(
-                        new EndpointConfiguration(ns.getString("endpoint"), ns.getString("region")));
+                AlternatorRequestHandler handler = new AlternatorRequestHandler(URI.create(ns.getString("streams_endpoint")));
+                sb.withRequestHandlers(handler);
             }
             if (ns.getString("user") != null) {
                 b.withCredentials(new AWSStaticCredentialsProvider(
