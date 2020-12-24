@@ -35,6 +35,7 @@ dependencies {
 
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
+    implementation files('libs/LoadBalancing-1.0.jar')
 }
 
 // In this section you declare where to find the dependencies of your project
