@@ -25,6 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.streamsadapter.model.RecordAdapter;
+import com.amazonaws.services.kinesis.clientlibrary.exceptions.InvalidStateException;
+import com.amazonaws.services.kinesis.clientlibrary.exceptions.ShutdownException;
+import com.amazonaws.services.kinesis.clientlibrary.exceptions.ThrottlingException;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessor;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.ShutdownReason;
@@ -33,7 +36,14 @@ import com.amazonaws.services.kinesis.model.Record;
 public class StreamsRecordProcessor implements IRecordProcessor {
     private final static Logger LOGGER = LoggerFactory.getLogger("StreamsAdapterDemo");
 
-    private Integer checkpointCounter;
+    private String kinesisShardId;
+    // Backoff and retry settings
+    private static final long BACKOFF_TIME_IN_MILLIS = 3000L;
+    private static final int NUM_RETRIES = 10;
+
+    // Checkpoint about once a minute
+    private static final long CHECKPOINT_INTERVAL_MILLIS = 60000L;
+    private long nextCheckpointTimeInMillis;
 
     private final AmazonDynamoDB dynamoDBClient;
     private final String tableName;
@@ -45,13 +55,54 @@ public class StreamsRecordProcessor implements IRecordProcessor {
 
     @Override
     public void initialize(String shardId) {
-        checkpointCounter = 0;
+        this.kinesisShardId = shardId;
     }
 
     @Override
     public void processRecords(List<Record> records, IRecordProcessorCheckpointer checkpointer) {
-        LOGGER.debug("got " + records.size() + " records to process");
+        LOGGER.debug("got " + records.size() + " records to process on shardId: " + this.kinesisShardId);
+
+        // Process records and perform all exception handling.
+        processRecordsWithRetries(records);
+
+        if (System.currentTimeMillis() > nextCheckpointTimeInMillis) {
+            checkpoint(checkpointer);
+            nextCheckpointTimeInMillis = System.currentTimeMillis() + CHECKPOINT_INTERVAL_MILLIS;
+        }
+    }
+
+    private void processRecordsWithRetries(List<Record> records) {
         for (Record record : records) {
+            boolean processedSuccessfully = false;
+            for (int i = 0; i < NUM_RETRIES; i++) {
+                try {
+                    //
+                    // Logic to process record goes here.
+                    //
+                    processSingleRecord(record);
+
+                    processedSuccessfully = true;
+                    break;
+                } catch (Throwable t) {
+                    LOGGER.warn("Caught throwable while processing record " + record, t);
+                }
+
+                // backoff if we encounter an exception.
+                try {
+                    Thread.sleep(BACKOFF_TIME_IN_MILLIS);
+                } catch (InterruptedException e) {
+                    LOGGER.debug("Interrupted sleep", e);
+                }
+            }
+
+            if (!processedSuccessfully) {
+                LOGGER.error("Couldn't process record " + record + ". Skipping the record.");
+            }
+        }
+    }
+
+    private void processSingleRecord(Record record) {
+        try {
             if (record instanceof RecordAdapter) {
                 com.amazonaws.services.dynamodbv2.model.Record streamRecord = ((RecordAdapter) record)
                         .getInternalObject();
@@ -70,25 +121,54 @@ public class StreamsRecordProcessor implements IRecordProcessor {
                     deleteItem(dynamoDBClient, tableName, streamRecord.getDynamodb().getKeys().get("p").getS());
                 }
             }
-            /* TODO: add it later when we actually want to test it
-            ++checkpointCounter;
-            if (checkpointCounter % 10 == 0) {
-                try {
-                    checkpointer.checkpoint();
-                } catch (Exception e) {
-                    LOGGER.warn("checkpoint", e);
-                }
-            }*/
+        } catch (Exception e) {
+            LOGGER.error("failed to handle record", e);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void shutdown(IRecordProcessorCheckpointer checkpointer, ShutdownReason reason) {
+        LOGGER.debug("Shutting down record processor for shard: " + kinesisShardId);
+        // Important to checkpoint after reaching end of shard, so we can start processing data from child shards.
         if (reason == ShutdownReason.TERMINATE) {
+            checkpoint(checkpointer);
+        }
+    }
+
+    /** Checkpoint with retries.
+     * @param checkpointer
+     */
+    private void checkpoint(IRecordProcessorCheckpointer checkpointer) {
+        LOGGER.info("Checkpointing shard " + kinesisShardId);
+        for (int i = 0; i < NUM_RETRIES; i++) {
             try {
                 checkpointer.checkpoint();
-            } catch (Exception e) {
-                LOGGER.warn("shutdown", e);
+                break;
+            } catch (ShutdownException se) {
+                // Ignore checkpoint if the processor instance has been shutdown (fail over).
+                LOGGER.info("Caught shutdown exception, skipping checkpoint.", se);
+                break;
+            } catch (ThrottlingException e) {
+                // Backoff and re-attempt checkpoint upon transient failures
+                if (i >= (NUM_RETRIES - 1)) {
+                    LOGGER.error("Checkpoint failed after " + (i + 1) + "attempts.", e);
+                    break;
+                } else {
+                    LOGGER.info("Transient issue when checkpointing - attempt " + (i + 1) + " of "
+                            + NUM_RETRIES, e);
+                }
+            } catch (InvalidStateException e) {
+                // This indicates an issue with the DynamoDB table (check for table, provisioned IOPS).
+                LOGGER.error("Cannot save checkpoint to the DynamoDB table used by the Amazon Kinesis Client Library.", e);
+                break;
+            }
+            try {
+                Thread.sleep(BACKOFF_TIME_IN_MILLIS);
+            } catch (InterruptedException e) {
+                LOGGER.debug("Interrupted sleep", e);
             }
         }
     }
