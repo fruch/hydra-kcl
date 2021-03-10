@@ -15,6 +15,7 @@
 package com.scylladb.alternator;
 
 import static com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream.TRIM_HORIZON;
+import static com.amazonaws.services.kinesis.clientlibrary.lib.worker.ShardSyncStrategyType.PERIODIC;
 import static com.scylladb.alternator.StreamsAdapterDemoHelper.createTable;
 import static com.scylladb.alternator.StreamsAdapterDemoHelper.describeTable;
 import static com.scylladb.alternator.StreamsAdapterDemoHelper.putItems;
@@ -139,8 +140,9 @@ public class StreamsAdapterDemo {
                     streamArn, b.getCredentials(), "streams-demo-worker").withParentShardPollIntervalMillis(1000)
                             .withCleanupLeasesUponShardCompletion(true).withFailoverTimeMillis(240000)
                             .withRetryGetRecordsInSeconds(10).withInitialPositionInStream(TRIM_HORIZON)
-                            .withIdleTimeBetweenReadsInMillis(1).withIdleMillisBetweenCalls(1)
-                            .withShardSyncIntervalMillis(20000);
+                            .withIdleTimeBetweenReadsInMillis(0).withIdleMillisBetweenCalls(0)
+                            .withShardSyncIntervalMillis(20000)
+                            .withShardSyncStrategyType(PERIODIC);
 
             LOGGER.info("Creating worker for stream: " + streamArn);
             Worker worker = new Worker.Builder().recordProcessorFactory(recordProcessorFactory).config(workerConfig)

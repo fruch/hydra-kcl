@@ -2,7 +2,7 @@ FROM openjdk:8 as builder
 
 RUN apt-get update && apt-get install -y git
 
-RUN git clone https://github.com/fruch/hydra-kcl.git -b master
+RUN git clone https://github.com/fruch/hydra-kcl.git -b add_debug 
 RUN cd hydra-kcl; ./gradlew build
 
 FROM openjdk:8 as app
